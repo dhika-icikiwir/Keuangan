@@ -4,30 +4,29 @@ export interface Category {
   key: string;
   label: string;
   icon: string;
-  color: string;
 }
 
 export const EXPENSE_CATEGORIES: Category[] = [
-  { key: 'makan', label: 'Makan & Minum', icon: '🍜', color: '#F97316' },
-  { key: 'transport', label: 'Transportasi', icon: '🛵', color: '#3B82F6' },
-  { key: 'belanja', label: 'Belanja', icon: '🛒', color: '#EC4899' },
-  { key: 'tagihan', label: 'Tagihan', icon: '💡', color: '#EAB308' },
-  { key: 'pulsa', label: 'Pulsa & Internet', icon: '📱', color: '#8B5CF6' },
-  { key: 'kesehatan', label: 'Kesehatan', icon: '💊', color: '#EF4444' },
-  { key: 'hiburan', label: 'Hiburan', icon: '🎬', color: '#14B8A6' },
-  { key: 'pendidikan', label: 'Pendidikan', icon: '📚', color: '#6366F1' },
-  { key: 'rumah', label: 'Rumah', icon: '🏠', color: '#84CC16' },
-  { key: 'lainnya', label: 'Lainnya', icon: '📦', color: '#64748B' },
+  { key: 'makan', label: 'Makan & Minum', icon: '🍜' },
+  { key: 'transport', label: 'Transportasi', icon: '🛵' },
+  { key: 'belanja', label: 'Belanja', icon: '🛒' },
+  { key: 'tagihan', label: 'Tagihan', icon: '💡' },
+  { key: 'pulsa', label: 'Pulsa & Internet', icon: '📱' },
+  { key: 'kesehatan', label: 'Kesehatan', icon: '💊' },
+  { key: 'hiburan', label: 'Hiburan', icon: '🎬' },
+  { key: 'pendidikan', label: 'Pendidikan', icon: '📚' },
+  { key: 'rumah', label: 'Rumah', icon: '🏠' },
+  { key: 'lainnya', label: 'Lainnya', icon: '📦' },
 ];
 
 export const INCOME_CATEGORIES: Category[] = [
-  { key: 'gaji', label: 'Gaji', icon: '💼', color: '#16A34A' },
-  { key: 'bonus', label: 'Bonus', icon: '🎁', color: '#0EA5E9' },
-  { key: 'usaha', label: 'Usaha', icon: '🏪', color: '#F59E0B' },
-  { key: 'freelance', label: 'Freelance', icon: '💻', color: '#8B5CF6' },
-  { key: 'investasi', label: 'Investasi', icon: '📈', color: '#10B981' },
-  { key: 'hadiah', label: 'Hadiah', icon: '🎉', color: '#EC4899' },
-  { key: 'lainnya_in', label: 'Lainnya', icon: '💰', color: '#64748B' },
+  { key: 'gaji', label: 'Gaji', icon: '💼' },
+  { key: 'bonus', label: 'Bonus', icon: '🎁' },
+  { key: 'usaha', label: 'Usaha', icon: '🏪' },
+  { key: 'freelance', label: 'Freelance', icon: '💻' },
+  { key: 'investasi', label: 'Investasi', icon: '📈' },
+  { key: 'hadiah', label: 'Hadiah', icon: '🎉' },
+  { key: 'lainnya_in', label: 'Lainnya', icon: '💰' },
 ];
 
 export function categoriesFor(type: TxType): Category[] {
@@ -37,5 +36,5 @@ export function categoriesFor(type: TxType): Category[] {
 const ALL = [...EXPENSE_CATEGORIES, ...INCOME_CATEGORIES];
 
 export function getCategory(key: string): Category {
-  return ALL.find((c) => c.key === key) ?? { key, label: key, icon: '📦', color: '#64748B' };
+  return ALL.find((c) => c.key === key) ?? { key, label: key, icon: '📦' };
 }

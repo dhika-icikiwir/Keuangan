@@ -1,13 +1,15 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, Empty, SectionTitle, SummaryRow, TxItem } from '../components/ui';
+import { Text } from 'react-native';
+import { Card, Empty, LineItem, Screen, SectionTitle, SummaryRow, Total, TxItem } from '../components/ui';
 import { formatLongDate, formatMonth, formatRupiah, monthKeyOf, todayKey } from '../format';
 import { sumBy, useStore } from '../store';
-import { colors } from '../theme';
+import { Colors, useColors, useStyles } from '../theme';
 import { Transaction } from '../types';
 
 export default function HomeScreen({ onEdit }: { onEdit: (tx: Transaction) => void }) {
   const { transactions } = useStore();
+  const s = useStyles(styles);
+  const c = useColors();
   const today = todayKey();
   const month = monthKeyOf(today);
 
@@ -17,63 +19,43 @@ export default function HomeScreen({ onEdit }: { onEdit: (tx: Transaction) => vo
   const recent = transactions.slice(0, 8);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.greet}>{formatLongDate(today)}</Text>
-
-      <View style={styles.hero}>
-        <Text style={styles.heroLabel}>Total Saldo</Text>
-        <Text style={styles.heroValue} numberOfLines={1} adjustsFontSizeToFit>{formatRupiah(all.balance)}</Text>
-        <View style={styles.heroRow}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroSmallLabel}>Pemasukan</Text>
-            <Text style={styles.heroSmall}>{formatRupiah(all.income)}</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.heroSmallLabel}>Pengeluaran</Text>
-            <Text style={styles.heroSmall}>{formatRupiah(all.expense)}</Text>
-          </View>
-        </View>
-      </View>
+    <Screen>
+      <Text style={s.date}>{formatLongDate(today)}</Text>
 
       <Card>
-        <SectionTitle>Hari Ini</SectionTitle>
-        <SummaryRow income={todaySum.income} expense={todaySum.expense} />
+        <Total label="Saldo semua catatan" value={all.balance} />
+        <SummaryRow income={all.income} expense={all.expense} />
       </Card>
 
       <Card>
-        <SectionTitle>Bulan {formatMonth(month)}</SectionTitle>
-        <SummaryRow income={monthSum.income} expense={monthSum.expense} />
-        <View style={styles.balanceLine}>
-          <Text style={{ color: colors.muted, fontWeight: '600' }}>Sisa bulan ini</Text>
-          <Text style={{ fontWeight: '800', color: monthSum.balance >= 0 ? colors.income : colors.expense }}>
-            {formatRupiah(monthSum.balance)}
-          </Text>
-        </View>
+        <SectionTitle>Hari ini</SectionTitle>
+        <LineItem label="Pemasukan" value={`+${formatRupiah(todaySum.income)}`} color={c.income} />
+        <LineItem label="Pengeluaran" value={`-${formatRupiah(todaySum.expense)}`} color={c.expense} />
       </Card>
 
       <Card>
-        <SectionTitle>Transaksi Terakhir</SectionTitle>
+        <SectionTitle>{formatMonth(month)}</SectionTitle>
+        <LineItem label="Pemasukan" value={`+${formatRupiah(monthSum.income)}`} color={c.income} />
+        <LineItem label="Pengeluaran" value={`-${formatRupiah(monthSum.expense)}`} color={c.expense} />
+        <LineItem
+          label="Sisa bulan ini"
+          value={formatRupiah(monthSum.balance)}
+          color={monthSum.balance < 0 ? c.expense : c.text}
+        />
+      </Card>
+
+      <Card>
+        <SectionTitle>Catatan terakhir</SectionTitle>
         {recent.length === 0 ? (
-          <Empty text={'Belum ada transaksi.\nTekan tombol + untuk mulai mencatat.'} />
+          <Empty text="Belum ada catatan." action="Ketuk tombol Catat di bawah untuk mencatat pemasukan atau pengeluaran pertama." />
         ) : (
           recent.map((t) => <TxItem key={t.id} tx={t} onPress={() => onEdit(t)} showDate />)
         )}
       </Card>
-    </ScrollView>
+    </Screen>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 110 },
-  greet: { color: colors.muted, fontWeight: '600', marginBottom: 10 },
-  hero: { backgroundColor: colors.primary, borderRadius: 20, padding: 20, marginBottom: 14 },
-  heroLabel: { color: '#DBEAFE', fontWeight: '600' },
-  heroValue: { color: '#fff', fontSize: 32, fontWeight: '800', marginVertical: 6 },
-  heroRow: { flexDirection: 'row', marginTop: 8 },
-  heroSmallLabel: { color: '#BFDBFE', fontSize: 12 },
-  heroSmall: { color: '#fff', fontWeight: '700', fontSize: 15, marginTop: 2 },
-  balanceLine: {
-    flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 12,
-    borderTopWidth: 1, borderTopColor: colors.border,
-  },
-});
+const styles = (c: Colors) => ({
+  date: { color: c.muted, fontWeight: '600', fontSize: 14, marginBottom: 12 },
+}) as const;

@@ -1,9 +1,7 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Card, Empty, Navigator, SectionTitle, SummaryRow, TxItem } from '../components/ui';
+import { Card, Empty, LineItem, Navigator, Screen, SectionTitle, SummaryRow, Total, TxItem } from '../components/ui';
 import { addDays, formatRupiah, relativeDayLabel, todayKey } from '../format';
 import { sumBy, useStore } from '../store';
-import { colors } from '../theme';
 import { Transaction } from '../types';
 
 interface Props {
@@ -17,7 +15,7 @@ export default function DailyScreen({ date, setDate, onEdit }: Props) {
   const list = useMemo(() => transactions.filter((t) => t.date === date), [transactions, date]);
   const sum = sumBy(list);
 
-  // Rata-rata pengeluaran 7 hari terakhir (sampai tanggal yang dipilih)
+  // Tujuh hari yang berakhir di tanggal yang dipilih, termasuk hari tanpa pengeluaran.
   const avg7 = useMemo(() => {
     const start = addDays(date, -6);
     const total = transactions
@@ -27,45 +25,31 @@ export default function DailyScreen({ date, setDate, onEdit }: Props) {
   }, [transactions, date]);
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <Screen>
       <Navigator
         label={relativeDayLabel(date)}
+        prevLabel="Hari sebelumnya"
+        nextLabel="Hari berikutnya"
+        resetHint="Ketuk untuk kembali ke hari ini"
         onPrev={() => setDate(addDays(date, -1))}
         onNext={() => setDate(addDays(date, 1))}
-        onLabelPress={() => setDate(todayKey())}
+        onReset={() => setDate(todayKey())}
       />
 
       <Card>
+        <Total label="Selisih hari ini" value={sum.balance} />
         <SummaryRow income={sum.income} expense={sum.expense} />
-        <View style={styles.line}>
-          <Text style={styles.muted}>Selisih hari ini</Text>
-          <Text style={{ fontWeight: '800', color: sum.balance >= 0 ? colors.income : colors.expense }}>
-            {formatRupiah(sum.balance)}
-          </Text>
-        </View>
-        <View style={[styles.line, { borderTopWidth: 0, paddingTop: 4, marginTop: 4 }]}>
-          <Text style={styles.muted}>Rata-rata pengeluaran 7 hari</Text>
-          <Text style={{ fontWeight: '700', color: colors.text }}>{formatRupiah(avg7)}</Text>
-        </View>
       </Card>
 
       <Card>
-        <SectionTitle>Daftar Transaksi ({list.length})</SectionTitle>
+        <SectionTitle>{`Catatan (${list.length})`}</SectionTitle>
         {list.length === 0 ? (
-          <Empty text="Tidak ada transaksi pada tanggal ini." />
+          <Empty text="Tidak ada catatan di tanggal ini." action="Ketuk Catat untuk menambah transaksi di tanggal ini." />
         ) : (
           list.map((t) => <TxItem key={t.id} tx={t} onPress={() => onEdit(t)} />)
         )}
+        <LineItem label="Rata-rata pengeluaran 7 hari terakhir" value={formatRupiah(avg7)} />
       </Card>
-    </ScrollView>
+    </Screen>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { padding: 16, paddingBottom: 110 },
-  muted: { color: colors.muted, fontWeight: '600' },
-  line: {
-    flexDirection: 'row', justifyContent: 'space-between', marginTop: 12, paddingTop: 12,
-    borderTopWidth: 1, borderTopColor: colors.border,
-  },
-});
