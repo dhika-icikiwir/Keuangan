@@ -1,163 +1,104 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { getCategory } from '../categories';
-import { formatRupiah, formatShortDate } from '../format';
-import { amountText, Colors, MAX_CONTENT_WIDTH, MIN_TAP, useColors, useStyles } from '../theme';
+import { MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+  AccessibilityInfo, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput,
+  View, ViewStyle,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { findCategory } from '../categories';
+import { formatNumberInput, formatRupiah } from '../format';
+import { useStore } from '../store';
+import { amountText, Colors, F, MAX_CONTENT_WIDTH, MIN_TAP, useColors, useStyles } from '../theme';
 import { Transaction } from '../types';
+
+type IconName = keyof typeof MaterialIcons.glyphMap;
+
+export function Icon({ name, size = 22, color }: { name: string; size?: number; color: string }) {
+  return <MaterialIcons name={name as IconName} size={size} color={color} importantForAccessibility="no" accessibilityElementsHidden />;
+}
+
+export function IconCircle({ name, tone = 'neutral', size = 44 }: { name: string; tone?: 'neutral' | 'primary' | 'expense'; size?: number }) {
+  const c = useColors();
+  const bg = tone === 'primary' ? c.iconBg : tone === 'expense' ? c.errorBg : c.cardAlt;
+  const fg = tone === 'primary' ? c.primary : tone === 'expense' ? c.onErrorBg : c.muted;
+  return (
+    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Icon name={name} size={size * 0.5} color={fg} />
+    </View>
+  );
+}
 
 export function Screen({ children }: { children: React.ReactNode }) {
   const s = useStyles(styles);
-  return <ScrollView contentContainerStyle={s.screen}>{children}</ScrollView>;
+  return <ScrollView contentContainerStyle={s.screen} keyboardShouldPersistTaps="handled">{children}</ScrollView>;
 }
 
-export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
+export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle | ViewStyle[] }) {
   const s = useStyles(styles);
   return <View style={[s.card, style]}>{children}</View>;
 }
 
-export function SectionTitle({ children }: { children: React.ReactNode }) {
+export function SectionHeader({ title, action, onAction, actionLabel }: {
+  title: string; action?: string; onAction?: () => void; actionLabel?: string;
+}) {
   const s = useStyles(styles);
-  return <Text style={s.sectionTitle} accessibilityRole="header">{children}</Text>;
+  const c = useColors();
+  return (
+    <View style={s.sectionHeader}>
+      <Text style={s.sectionTitle} accessibilityRole="header">{title}</Text>
+      {action && onAction ? (
+        <Pressable onPress={onAction} style={({ pressed }) => [s.linkBtn, pressed && s.pressed]}
+          accessibilityRole="button" accessibilityLabel={actionLabel ?? action}>
+          <Text style={s.linkText}>{action}</Text>
+          <Icon name="chevron-right" size={18} color={c.primary} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
 }
 
-interface NavigatorProps {
-  label: string;
-  prevLabel: string;
-  nextLabel: string;
-  resetHint: string;
-  onPrev: () => void;
-  onNext: () => void;
-  onReset: () => void;
-}
-
-export function Navigator({ label, prevLabel, nextLabel, resetHint, onPrev, onNext, onReset }: NavigatorProps) {
+export function Navigator({ label, onPrev, onNext, prevLabel, nextLabel }: {
+  label: string; onPrev: () => void; onNext: () => void; prevLabel: string; nextLabel: string;
+}) {
   const s = useStyles(styles);
+  const c = useColors();
   return (
     <View style={s.nav}>
       <Pressable onPress={onPrev} style={({ pressed }) => [s.navBtn, pressed && s.pressed]}
         accessibilityRole="button" accessibilityLabel={prevLabel}>
-        <Text style={s.navArrow} importantForAccessibility="no">‹</Text>
+        <Icon name="chevron-left" color={c.text} />
       </Pressable>
-      <Pressable onPress={onReset} style={({ pressed }) => [s.navCenter, pressed && s.pressed]}
-        accessibilityRole="button" accessibilityLabel={label} accessibilityHint={resetHint}>
-        <Text style={s.navLabel}>{label}</Text>
-      </Pressable>
+      <Text style={s.navLabel} accessibilityRole="header">{label}</Text>
       <Pressable onPress={onNext} style={({ pressed }) => [s.navBtn, pressed && s.pressed]}
         accessibilityRole="button" accessibilityLabel={nextLabel}>
-        <Text style={s.navArrow} importantForAccessibility="no">›</Text>
+        <Icon name="chevron-right" color={c.text} />
       </Pressable>
     </View>
   );
 }
 
-/** Angka total dengan garis ganda di bawahnya: penanda jumlah akhir dalam pembukuan. */
-export function Total({ label, value, tone }: { label: string; value: number; tone?: 'auto' | 'plain' }) {
-  const s = useStyles(styles);
-  const c = useColors();
-  const color = tone === 'plain' ? c.text : value < 0 ? c.expense : c.text;
-  return (
-    <View accessible accessibilityLabel={`${label} ${formatRupiah(value)}`}>
-      <Text style={s.totalLabel}>{label}</Text>
-      <View style={{ alignSelf: 'flex-start' }}>
-        <Text style={[s.totalValue, { color }]} numberOfLines={1} adjustsFontSizeToFit>
-          {formatRupiah(value)}
-        </Text>
-        <View style={s.rule} />
-        <View style={[s.rule, { marginTop: 2 }]} />
-      </View>
-    </View>
-  );
-}
+interface SegmentOption<T extends string> { value: T; label: string; icon?: string }
 
-export function SummaryRow({ income, expense }: { income: number; expense: number }) {
+export function Segmented<T extends string>({ options, value, onChange, label, small }: {
+  options: SegmentOption<T>[]; value: T; onChange: (v: T) => void; label: string; small?: boolean;
+}) {
   const s = useStyles(styles);
   const c = useColors();
   return (
-    <View style={s.summaryRow}>
-      <View style={s.summaryCol} accessible accessibilityLabel={`Pemasukan ${formatRupiah(income)}`}>
-        <Text style={s.summaryLabel}>Pemasukan</Text>
-        <Text style={[s.summaryValue, { color: c.income }]} numberOfLines={1} adjustsFontSizeToFit>
-          +{formatRupiah(income)}
-        </Text>
-      </View>
-      <View style={[s.summaryCol, s.summaryDivider]} accessible accessibilityLabel={`Pengeluaran ${formatRupiah(expense)}`}>
-        <Text style={s.summaryLabel}>Pengeluaran</Text>
-        <Text style={[s.summaryValue, { color: c.expense }]} numberOfLines={1} adjustsFontSizeToFit>
-          -{formatRupiah(expense)}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-export function LineItem({ label, value, color }: { label: string; value: string; color?: string }) {
-  const s = useStyles(styles);
-  return (
-    <View style={s.lineItem} accessible accessibilityLabel={`${label} ${value}`}>
-      <Text style={s.lineLabel}>{label}</Text>
-      <Text style={[s.lineValue, color ? { color } : null]}>{value}</Text>
-    </View>
-  );
-}
-
-export function TxItem({ tx, onPress, showDate }: { tx: Transaction; onPress: () => void; showDate?: boolean }) {
-  const s = useStyles(styles);
-  const c = useColors();
-  const cat = getCategory(tx.category);
-  const isIncome = tx.type === 'income';
-  const sub = [tx.note ? cat.label : '', showDate ? formatShortDate(tx.date) : ''].filter(Boolean).join(', ');
-  const amount = `${isIncome ? '+' : '-'}${formatRupiah(tx.amount)}`;
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [s.txItem, pressed && s.pressed]}
-      accessibilityRole="button"
-      accessibilityLabel={`${isIncome ? 'Pemasukan' : 'Pengeluaran'} ${tx.note || cat.label}, ${sub ? sub + ', ' : ''}${formatRupiah(tx.amount)}`}
-      accessibilityHint="Ketuk untuk mengubah atau menghapus"
-    >
-      <Text style={s.txIcon} importantForAccessibility="no">{cat.icon}</Text>
-      <View style={{ flex: 1 }}>
-        <Text style={s.txTitle} numberOfLines={1}>{tx.note || cat.label}</Text>
-        {sub ? <Text style={s.txSub} numberOfLines={1}>{sub}</Text> : null}
-      </View>
-      <Text style={[s.txAmount, { color: isIncome ? c.income : c.expense }]}>{amount}</Text>
-    </Pressable>
-  );
-}
-
-export function Empty({ text, action }: { text: string; action?: string }) {
-  const s = useStyles(styles);
-  return (
-    <View style={s.empty}>
-      <Text style={s.emptyText}>{text}</Text>
-      {action ? <Text style={s.emptyAction}>{action}</Text> : null}
-    </View>
-  );
-}
-
-interface SegmentedProps<T extends string> {
-  options: { value: T; label: string; activeColor: string; activeText: string }[];
-  value: T;
-  onChange: (v: T) => void;
-  label: string;
-}
-
-export function Segmented<T extends string>({ options, value, onChange, label }: SegmentedProps<T>) {
-  const s = useStyles(styles);
-  return (
-    <View style={s.segment} accessibilityRole="radiogroup" accessibilityLabel={label}>
+    <View style={[s.segment, small && s.segmentSmall]} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o) => {
         const active = o.value === value;
         return (
           <Pressable
             key={o.value}
             onPress={() => onChange(o.value)}
-            style={({ pressed }) => [s.segmentBtn, active && { backgroundColor: o.activeColor }, pressed && !active && s.pressed]}
+            style={({ pressed }) => [s.segmentBtn, active && (small ? s.segmentActiveSmall : s.segmentActive), pressed && !active && s.pressed]}
             accessibilityRole="radio"
             aria-checked={active}
             accessibilityLabel={o.label}
           >
-            <Text style={[s.segmentText, active && { color: o.activeText }]}>{o.label}</Text>
+            {o.icon ? <Icon name={o.icon} size={18} color={active && !small ? c.onPrimary : active ? c.primary : c.muted} /> : null}
+            <Text style={[s.segmentText, active && (small ? s.segmentTextActiveSmall : s.segmentTextActive)]}>{o.label}</Text>
           </Pressable>
         );
       })}
@@ -165,68 +106,268 @@ export function Segmented<T extends string>({ options, value, onChange, label }:
   );
 }
 
-const styles = (c: Colors) => ({
-  screen: {
-    padding: 16,
-    paddingBottom: 96,
-    width: '100%',
-    maxWidth: MAX_CONTENT_WIDTH,
-    alignSelf: 'center',
-  },
+export function ChangeNote({ pct, goodWhenDown, compareLabel }: { pct: number | null; goodWhenDown: boolean; compareLabel: string }) {
+  const s = useStyles(styles);
+  const c = useColors();
+  if (pct === null) return <Text style={s.changeNeutral}>Belum ada data {compareLabel} untuk dibandingkan</Text>;
+  if (pct === 0) return <Text style={s.changeNeutral}>Sama dengan {compareLabel}</Text>;
+  const down = pct < 0;
+  const good = down === goodWhenDown;
+  const color = good ? c.primary : c.expense;
+  return (
+    <View style={s.changeRow}>
+      <View style={{ marginTop: 1 }}><Icon name={down ? 'arrow-downward' : 'arrow-upward'} size={16} color={color} /></View>
+      <Text style={[s.changeText, { color }]}>
+        {down ? 'Turun' : 'Naik'} {Math.abs(pct)}% dari {compareLabel}
+      </Text>
+    </View>
+  );
+}
+
+export function ProgressBar({ value, color }: { value: number; color: string }) {
+  const s = useStyles(styles);
+  return (
+    <View style={s.track}>
+      <View style={[s.fill, { width: `${Math.max(0, Math.min(1, value)) * 100}%`, backgroundColor: color }]} />
+    </View>
+  );
+}
+
+export function TxRow({ tx, onPress, showDate }: { tx: Transaction; onPress: () => void; showDate?: string }) {
+  const s = useStyles(styles);
+  const c = useColors();
+  const { categories } = useStore();
+  const cat = findCategory(categories, tx.category);
+  const isIncome = tx.type === 'income';
+  const title = tx.note || cat.label;
+  const sub = [tx.note ? cat.label : '', showDate ?? ''].filter(Boolean).join(' · ');
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [s.txRow, pressed && s.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${isIncome ? 'Pemasukan' : 'Pengeluaran'} ${title}${sub ? ', ' + sub : ''}, ${formatRupiah(tx.amount)}`}
+      accessibilityHint="Ketuk untuk mengubah atau menghapus"
+    >
+      <IconCircle name={cat.icon} tone={isIncome ? 'primary' : 'neutral'} />
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={s.txTitle} numberOfLines={1}>{title}</Text>
+        {sub ? <Text style={s.txSub} numberOfLines={1}>{sub}</Text> : null}
+      </View>
+      <Text style={[s.txAmount, { color: isIncome ? c.income : c.text }]}>
+        {isIncome ? '+' : '-'}{formatRupiah(tx.amount)}
+      </Text>
+    </Pressable>
+  );
+}
+
+export function Divider() {
+  const s = useStyles(styles);
+  return <View style={s.divider} />;
+}
+
+export function Empty({ icon, title, text, action, onAction }: {
+  icon: string; title: string; text?: string; action?: string; onAction?: () => void;
+}) {
+  const s = useStyles(styles);
+  const c = useColors();
+  return (
+    <View style={s.empty}>
+      <View style={s.emptyIcon}><Icon name={icon} size={30} color={c.muted} /></View>
+      <Text style={s.emptyTitle}>{title}</Text>
+      {text ? <Text style={s.emptyText}>{text}</Text> : null}
+      {action && onAction ? <Button label={action} onPress={onAction} variant="soft" /> : null}
+    </View>
+  );
+}
+
+export function Button({ label, onPress, variant = 'primary', icon, danger }: {
+  label: string; onPress: () => void; variant?: 'primary' | 'soft' | 'plain'; icon?: string; danger?: boolean;
+}) {
+  const s = useStyles(styles);
+  const c = useColors();
+  const bg = variant === 'primary' ? (danger ? c.expense : c.primary) : variant === 'soft' ? (danger ? c.errorBg : c.cardAlt) : 'transparent';
+  const fg = variant === 'primary' ? (danger ? c.onExpense : c.onPrimary) : danger ? (variant === 'soft' ? c.onErrorBg : c.expense) : c.primary;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={label}
+      style={({ pressed }) => [s.button, { backgroundColor: bg }, pressed && { opacity: 0.8 }]}>
+      {icon ? <Icon name={icon} size={20} color={fg} /> : null}
+      <Text style={[s.buttonText, { color: fg }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+export function ListRow({ icon, title, subtitle, right, onPress, children }: {
+  icon: string; title: string; subtitle?: string; right?: string; onPress?: () => void; children?: React.ReactNode;
+}) {
+  const s = useStyles(styles);
+  const c = useColors();
+  const body = (
+    <>
+      <View style={s.listIcon}><Icon name={icon} color={c.primary} /></View>
+      <View style={{ flex: 1, minWidth: 0 }}>
+        <Text style={s.listTitle}>{title}</Text>
+        {subtitle ? <Text style={s.listSub}>{subtitle}</Text> : null}
+      </View>
+      {right ? <Text style={s.listRight}>{right}</Text> : null}
+      {children}
+      {onPress ? <Icon name="chevron-right" size={22} color={c.subtle} /> : null}
+    </>
+  );
+  if (!onPress) return <View style={s.listRow}>{body}</View>;
+  return (
+    <Pressable onPress={onPress} style={({ pressed }) => [s.listRow, pressed && s.pressed]}
+      accessibilityRole="button" accessibilityLabel={[title, subtitle, right].filter(Boolean).join(', ')}>
+      {body}
+    </Pressable>
+  );
+}
+
+export function FieldLabel({ children, nativeID }: { children: string; nativeID?: string }) {
+  const s = useStyles(styles);
+  return <Text style={s.fieldLabel} nativeID={nativeID}>{children}</Text>;
+}
+
+export function AmountInput({ value, onChange, color, label, autoFocus }: {
+  value: string; onChange: (v: string) => void; color?: string; label: string; autoFocus?: boolean;
+}) {
+  const s = useStyles(styles);
+  const c = useColors();
+  const tint = color ?? c.text;
+  return (
+    <View style={[s.amountBox, { borderColor: color ?? c.control }]}>
+      <Text style={[s.rp, { color: tint }]} importantForAccessibility="no">Rp</Text>
+      <TextInput
+        value={value}
+        onChangeText={(v) => onChange(formatNumberInput(v))}
+        keyboardType="number-pad"
+        placeholder="0"
+        placeholderTextColor={c.subtle}
+        style={[s.amountInput, { color: tint }]}
+        autoFocus={autoFocus}
+        accessibilityLabel={`${label} dalam rupiah`}
+      />
+    </View>
+  );
+}
+
+export function TextField({ value, onChange, label, placeholder, maxLength }: {
+  value: string; onChange: (v: string) => void; label: string; placeholder?: string; maxLength?: number;
+}) {
+  const s = useStyles(styles);
+  const c = useColors();
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChange}
+      placeholder={placeholder}
+      placeholderTextColor={c.subtle}
+      style={s.textInput}
+      maxLength={maxLength}
+      accessibilityLabel={label}
+    />
+  );
+}
+
+function useReduceMotion() {
+  const [reduce, setReduce] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduce).catch(() => {});
+    const sub = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduce);
+    return () => sub.remove();
+  }, []);
+  return reduce;
+}
+
+/** Layar penuh di atas tab, dipakai untuk form dan halaman pengaturan. */
+export function ModalScreen({ visible, title, onClose, closeLabel = 'Batal', onSave, saveLabel = 'Simpan', children }: {
+  visible: boolean; title: string; onClose: () => void; closeLabel?: string;
+  onSave?: () => void; saveLabel?: string; children: React.ReactNode;
+}) {
+  const s = useStyles(styles);
+  const reduceMotion = useReduceMotion();
+  return (
+    <Modal visible={visible} animationType={reduceMotion ? 'none' : 'slide'} onRequestClose={onClose}>
+      <SafeAreaView style={s.modalRoot}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={s.modalHeader}>
+            <Pressable onPress={onClose} style={({ pressed }) => [s.headerBtn, pressed && s.pressed]}
+              accessibilityRole="button" accessibilityLabel={`${closeLabel}, tutup ${title}`}>
+              <Text style={s.headerBtnText}>{closeLabel}</Text>
+            </Pressable>
+            <Text style={s.modalTitle} accessibilityRole="header" numberOfLines={1}>{title}</Text>
+            {onSave ? (
+              <Pressable onPress={onSave} style={({ pressed }) => [s.headerBtn, pressed && s.pressed]}
+                accessibilityRole="button" accessibilityLabel={saveLabel}>
+                <Text style={[s.headerBtnText, { fontFamily: F.bold }]}>{saveLabel}</Text>
+              </Pressable>
+            ) : <View style={s.headerBtn} />}
+          </View>
+          <ScrollView contentContainerStyle={s.modalBody} keyboardShouldPersistTaps="handled">{children}</ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </Modal>
+  );
+}
+
+const styles = (c: Colors) => StyleSheet.create({
+  screen: { padding: 16, paddingBottom: 104, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center', gap: 16 },
   card: {
-    backgroundColor: c.card,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.line,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: c.card, borderRadius: 16, padding: 16,
+    shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 4, shadowOffset: { width: 0, height: 1 }, elevation: 1,
   },
   pressed: { backgroundColor: c.pressed },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: c.text, marginBottom: 8 },
-  nav: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: c.card,
-    borderRadius: 12,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: c.line,
-    padding: 4,
-    marginBottom: 12,
-    gap: 4,
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: MIN_TAP },
+  sectionTitle: { fontFamily: F.bold, fontSize: 18, color: c.text },
+  linkBtn: { flexDirection: 'row', alignItems: 'center', minHeight: MIN_TAP, paddingHorizontal: 8, borderRadius: 10 },
+  linkText: { fontFamily: F.semibold, fontSize: 14, color: c.primary },
+  nav: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  navBtn: { width: MIN_TAP + 4, height: MIN_TAP + 4, borderRadius: 24, alignItems: 'center', justifyContent: 'center', backgroundColor: c.cardAlt },
+  navLabel: { flex: 1, textAlign: 'center', fontFamily: F.bold, fontSize: 17, color: c.text },
+  segment: { flexDirection: 'row', backgroundColor: c.container, borderRadius: 14, padding: 4, gap: 4 },
+  segmentSmall: { backgroundColor: c.cardAlt },
+  segmentBtn: { flex: 1, minHeight: MIN_TAP, borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 8 },
+  segmentActive: { backgroundColor: c.primary },
+  segmentActiveSmall: { backgroundColor: c.card, borderWidth: 1, borderColor: c.primary },
+  segmentText: { fontFamily: F.semibold, fontSize: 14, color: c.muted },
+  segmentTextActive: { color: c.onPrimary },
+  segmentTextActiveSmall: { color: c.primary, fontFamily: F.bold },
+  changeRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 4 },
+  changeText: { fontFamily: F.semibold, fontSize: 13, flexShrink: 1 },
+  changeNeutral: { fontFamily: F.medium, fontSize: 13, color: c.subtle },
+  track: { height: 8, borderRadius: 4, backgroundColor: c.container, overflow: 'hidden' },
+  fill: { height: '100%', borderRadius: 4 },
+  txRow: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 10, paddingHorizontal: 16 },
+  txTitle: { fontFamily: F.semibold, fontSize: 15, color: c.text },
+  txSub: { fontFamily: F.regular, fontSize: 13, color: c.muted, marginTop: 2 },
+  txAmount: { fontFamily: F.bold, fontSize: 15, ...amountText },
+  divider: { height: StyleSheet.hairlineWidth, backgroundColor: c.line, marginHorizontal: 16 },
+  empty: { alignItems: 'center', paddingVertical: 24, paddingHorizontal: 16, gap: 8 },
+  emptyIcon: { width: 64, height: 64, borderRadius: 32, backgroundColor: c.container, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
+  emptyTitle: { fontFamily: F.bold, fontSize: 17, color: c.text, textAlign: 'center' },
+  emptyText: { fontFamily: F.regular, fontSize: 14, color: c.muted, textAlign: 'center', maxWidth: 300, marginBottom: 4 },
+  button: { minHeight: 48, borderRadius: 12, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  buttonText: { fontFamily: F.bold, fontSize: 15 },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 64, paddingVertical: 10, paddingHorizontal: 16 },
+  listIcon: { width: 40, height: 40, borderRadius: 12, backgroundColor: c.cardAlt, alignItems: 'center', justifyContent: 'center' },
+  listTitle: { fontFamily: F.semibold, fontSize: 15, color: c.text },
+  listSub: { fontFamily: F.regular, fontSize: 13, color: c.muted, marginTop: 2 },
+  listRight: { fontFamily: F.bold, fontSize: 14, color: c.text, ...amountText },
+  fieldLabel: { fontFamily: F.semibold, fontSize: 14, color: c.muted, marginBottom: 8, marginTop: 20 },
+  amountBox: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.card, borderRadius: 14, borderWidth: 2, paddingHorizontal: 14 },
+  rp: { fontFamily: F.bold, fontSize: 22, marginRight: 8 },
+  amountInput: { flex: 1, fontFamily: F.extrabold, fontSize: 28, paddingVertical: 12, ...amountText },
+  textInput: {
+    backgroundColor: c.card, borderRadius: 14, borderWidth: 1, borderColor: c.control,
+    paddingHorizontal: 14, minHeight: 52, fontSize: 16, color: c.text, fontFamily: F.regular,
   },
-  navBtn: { width: MIN_TAP + 4, height: MIN_TAP + 4, alignItems: 'center', justifyContent: 'center', borderRadius: 10 },
-  navCenter: { flex: 1, minHeight: MIN_TAP + 4, justifyContent: 'center', borderRadius: 10 },
-  navArrow: { fontSize: 28, color: c.accent, fontWeight: '600', marginTop: -4 },
-  navLabel: { textAlign: 'center', fontSize: 16, fontWeight: '700', color: c.text },
-  totalLabel: { fontSize: 14, color: c.muted, fontWeight: '600', marginBottom: 4 },
-  totalValue: { fontSize: 32, fontWeight: '800', ...amountText },
-  rule: { height: 1.5, backgroundColor: c.text, marginTop: 4 },
-  summaryRow: { flexDirection: 'row', marginTop: 16 },
-  summaryCol: { flex: 1 },
-  summaryDivider: { borderLeftWidth: StyleSheet.hairlineWidth, borderLeftColor: c.line, paddingLeft: 12 },
-  summaryLabel: { fontSize: 13, color: c.muted, marginBottom: 2, fontWeight: '600' },
-  summaryValue: { fontSize: 17, fontWeight: '700', ...amountText },
-  lineItem: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line, gap: 12,
+  modalRoot: { flex: 1, backgroundColor: c.bg },
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 4,
+    backgroundColor: c.card, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: c.line,
   },
-  lineLabel: { color: c.muted, fontWeight: '600', flexShrink: 1 },
-  lineValue: { fontWeight: '700', color: c.text, flexShrink: 0, ...amountText },
-  txItem: {
-    flexDirection: 'row', alignItems: 'center', minHeight: 56, paddingVertical: 8, gap: 12,
-    borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: c.line, marginHorizontal: -8, paddingHorizontal: 8,
-  },
-  txIcon: { fontSize: 20, width: 28, textAlign: 'center' },
-  txTitle: { fontSize: 15, fontWeight: '600', color: c.text },
-  txSub: { fontSize: 13, color: c.muted, marginTop: 2 },
-  txAmount: { fontSize: 15, fontWeight: '700', ...amountText },
-  empty: { paddingVertical: 16, gap: 4 },
-  emptyText: { color: c.text, fontSize: 15 },
-  emptyAction: { color: c.muted, fontSize: 14 },
-  segment: {
-    flexDirection: 'row', backgroundColor: c.card, borderRadius: 10, padding: 3,
-    borderWidth: 1, borderColor: c.control, gap: 3,
-  },
-  segmentBtn: { flex: 1, minHeight: MIN_TAP, paddingHorizontal: 12, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  segmentText: { fontWeight: '700', color: c.muted, fontSize: 15 },
-}) as const;
+  modalTitle: { flex: 1, textAlign: 'center', fontFamily: F.bold, fontSize: 17, color: c.text },
+  headerBtn: { minHeight: MIN_TAP + 4, minWidth: 72, paddingHorizontal: 10, justifyContent: 'center', alignItems: 'center', borderRadius: 10 },
+  headerBtnText: { fontFamily: F.semibold, fontSize: 16, color: c.primary },
+  modalBody: { padding: 16, paddingBottom: 40, width: '100%', maxWidth: MAX_CONTENT_WIDTH, alignSelf: 'center' },
+});

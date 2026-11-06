@@ -1,46 +1,46 @@
-# DESIGN.md: Keuanganku
+# DESIGN.md: Keuangan Adhika
 
-Reading this as: aplikasi pencatat keuangan pribadi untuk pengguna Indonesia sehari-hari, dengan bahasa visual buku kas yang tenang dan rapi, dial ENERGY 1 / RHYTHM 1 / MOTION 1.
+Reading this as: aplikasi pencatat keuangan pribadi untuk pemakaian sehari-hari di HP, mengikuti desain "Artha" yang diberikan pemilik (hijau zamrud, Plus Jakarta Sans, kartu putih membulat, 5 tab), dalam versi jujur tanpa hiasan palsu. Dial ENERGY 2 / RHYTHM 2 / MOTION 1.
 
-## Karakter
-Seperti buku kas: kertas terang, tinta gelap, angka jelas. Yang paling penting di setiap layar adalah angka uang, bukan hiasan.
+## Asal arah desain
+Pemilik memberikan lima mockup HTML (Ringkasan, Transaksi, Statistik, Kalender, Pengaturan). Keputusan pemilik pada 2026-11-06:
+- Fitur yang butuh bank atau server (Transfer, Kirim Dana, Scan QRIS, Bayar Sekarang, rekening terhubung, sinkronisasi cloud, akun/premium) dihapus semua.
+- "Versi jujur": angka pembanding dan catatan dihitung dari data pengguna, tanpa label AI; kartu saldo hijau polos tanpa gradasi/blur/glow; header dan tab bar solid; badge "Real-time"/"Terkoneksi" dan titik berkedip dihapus; label tidak memakai huruf besar berjarak lebar.
+- Nama aplikasi: Keuangan Adhika. Tanpa foto atau profil karena aplikasi tidak punya akun.
+- Pengingat, kunci sidik jari, dan ekspor tidak dibuat (tidak dipilih).
 
 ## Palet
-Dua warna inti dan satu aksen. Merah hanya dipakai untuk pengeluaran.
 
 | Token | Terang | Gelap | Alasan |
 |---|---|---|---|
-| `bg` (kertas) | `#F6F5F1` | `#151716` | Putih hangat seperti kertas buku kas, tidak menyilaukan. |
-| `card` | `#FFFFFF` | `#1E2120` | Lembar di atas kertas, cukup beda dari latar tanpa bayangan. |
-| `text` (tinta) | `#1D1F1E` | `#ECEDEA` | Tinta gelap untuk angka dan judul. |
-| `muted` | `#5B605C` | `#A3A8A4` | Label sekunder, tetap di atas 4.5:1. |
-| `accent` / pemasukan | `#1E5B43` | `#7FD1A6` | Hijau tua uang: satu aksen untuk aksi utama dan pemasukan. |
-| `expense` | `#A8321E` | `#FF8A75` | Merah bata untuk pengeluaran, lebih kalem dari merah terang. |
-| `line` | `#DEDCD4` | `#2E3230` | Garis buku bergaris (dekoratif, pemisah baris). |
-| `control` | `#8A8E8A` | `#6E746F` | Garis tepi kontrol, minimal 3:1 terhadap latar. |
+| `bg` | `#FAF8FF` | `#0F1420` | Latar putih kebiruan dari mockup; kartu putih tampak terangkat tanpa bayangan tebal. |
+| `card` | `#FFFFFF` | `#191F2C` | Lembar konten. |
+| `cardAlt` / `container` | `#F2F3FF` / `#EAEDFF` | `#222A3A` / `#2A3244` | Kotak sekunder, chip tidak aktif, jalur progress. |
+| `text` | `#131B2E` | `#E2E6F3` | Tinta navy dari mockup. |
+| `muted` / `subtle` | `#3D4A42` / `#5E6A63` | `#B4C0B8` / `#98A49C` | Label dan teks sekunder, semua di atas 4.5:1. |
+| `primary` / pemasukan | `#006948` | `#68DBA9` | Hijau zamrud: satu aksen untuk aksi utama, tab aktif, dan pemasukan. |
+| `expense` | `#BA1A1A` | `#FFB4AB` | Merah hanya untuk pengeluaran, batas anggaran terlampaui, dan peringatan. |
+| `chart` | 5 warna | 5 warna | Hanya untuk donat kategori; setiap warna minimal 3:1 terhadap kartu, potongan dipisah celah. |
 
-Semua pasangan teks sudah dicek dengan `contrast-check.py` (anti-slop) dan lolos WCAG AA di kedua tema.
+Semua pasangan teks dicek dengan `contrast-check.py` (anti-slop) di kedua tema.
 
 ## Tipografi
-Font sistem (Roboto di Android, SF di iPhone): paling terbaca di HP, ikut ukuran huruf yang diatur pengguna, dan tidak menambah ukuran aplikasi.
-Semua nominal memakai angka tabular (`fontVariant: ['tabular-nums']`) supaya digit sejajar seperti kolom buku kas.
-
-## Motif identitas
-Garis ganda di bawah angka total. Ini konvensi pembukuan untuk menandai jumlah akhir, dan dipakai di setiap total (saldo, total harian, total bulanan).
-Daftar transaksi ditulis seperti baris buku kas: dipisah garis tipis, nominal rata kanan.
+Plus Jakarta Sans (400, 500, 600, 700, 800) sesuai mockup: huruf geometris yang tetap jelas untuk angka besar. Semua nominal memakai angka tabular supaya digit sejajar.
 
 ## Komposisi
-- Satu titik fokus per layar: total saldo (Beranda), total hari itu (Harian), sisa bulan itu (Bulanan).
-- Kartu datar dengan garis tepi tipis, tanpa bayangan. Satu-satunya elevasi ada di tombol "Catat" karena tombol itu mengambang di atas konten.
-- Sudut membulat 12 untuk kartu dan 10 untuk kontrol; tidak ada elemen berbentuk pil kecuali tombol "Catat".
-- Lebar konten maksimal 560 dan diletakkan di tengah, supaya tetap terbaca di tablet.
+- Satu titik fokus per layar: kartu saldo (Ringkasan), total periode (Transaksi, Statistik), kalender bulan (Kalender).
+- Kartu putih sudut 16 dengan bayangan sangat tipis (elevasi 1) sebagai lembar di atas latar; tombol "Catat Baru" satu-satunya elevasi tebal karena mengambang di atas konten.
+- Kartu saldo hijau solid dengan dua aksi (Pemasukan, Pengeluaran) menggantikan "Tambah Saldo" dan "Kirim Dana" dari mockup.
+- Lebar konten maksimal 560 di tablet.
 
 ## Ikon
-- Tab bar hanya teks, karena tiga tujuan cukup jelas dengan kata; penanda aktif berupa garis aksen dan huruf tebal.
-- Emoji kategori (🍜 🛵 🛒 dan seterusnya) dipertahankan: tiap emoji menggambarkan isi kategorinya dan mempercepat pengenalan di daftar. Selalu didampingi nama kategori.
+MaterialIcons (keluarga yang sama dengan Material Symbols di mockup). Setiap ikon menggambarkan isinya: kategori (restoran, mobil, tas belanja), tab (dashboard, struk, grafik, kalender, pengaturan). Tidak ada ikon hiasan seperti bintang atau kilau.
+
+## Angka dan klaim
+Tidak ada angka contoh. Persentase pembanding dihitung dari periode sebelumnya dan disembunyikan bila periode sebelumnya kosong. Catatan di Ringkasan dan Statistik hanya muncul bila datanya ada.
 
 ## Gerak
-Hanya umpan balik saat ditekan, ditambah form yang muncul dari bawah. Animasi form dimatikan jika pengguna menyalakan "kurangi gerakan".
+Hanya umpan balik saat ditekan dan form yang muncul dari bawah. Animasi form dimatikan bila pengguna menyalakan "kurangi gerakan".
 
 ## Tema
 Mengikuti tema sistem HP (terang/gelap).

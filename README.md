@@ -1,13 +1,13 @@
-# Keuanganku
+# Keuangan Adhika
 
 Aplikasi pencatat keuangan pribadi untuk Android/iOS (Expo + React Native).
 
-- Beranda: saldo, ringkasan hari ini dan bulan ini, catatan terakhir.
-- Harian: pemasukan dan pengeluaran per tanggal (geser dengan ‹ ›), rata-rata pengeluaran 7 hari.
-- Bulanan: sisa bulan itu, pengeluaran per hari, rincian per kategori, ringkasan per hari.
-- Tombol Catat untuk menambah transaksi; ketuk transaksi untuk mengubah atau menghapus.
-- Data tersimpan di HP (offline), tidak dikirim ke mana pun.
-- Mengikuti tema terang/gelap HP.
+- Ringkasan: saldo (bisa disembunyikan), pemasukan dan pengeluaran periode ini dibanding periode lalu, pos anggaran, transaksi terbaru, pengeluaran 7 hari terakhir.
+- Transaksi: cari, filter pemasukan/pengeluaran, total per periode, daftar per hari.
+- Statistik: per minggu, bulan, atau tahun; donat per kategori, grafik tren, kategori yang paling naik.
+- Kalender: tanda pemasukan, pengeluaran, dan tagihan per tanggal; catatan per hari; tagihan rutin yang bisa ditandai lunas.
+- Pengaturan: kategori buatan sendiri, batas anggaran per kategori, target tabungan, tanggal mulai periode bulanan.
+- Data tersimpan hanya di HP (offline), tidak dikirim ke mana pun. Mengikuti tema terang/gelap HP.
 
 Arah desain ada di `DESIGN.md`.
 

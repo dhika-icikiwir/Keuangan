@@ -4,13 +4,16 @@ Baca juga `AGENTS.md` untuk aturan Expo/React Native, dan `DESIGN.md` untuk arah
 Untuk pekerjaan UI, aturan antislop (https://github.com/miqdadbadjuber/anti-slop) berlaku; audit tersimpan di `anti-slop/`.
 
 ## Tentang proyek
-Keuanganku: aplikasi pencatat keuangan pribadi (Expo + React Native + TypeScript).
-- `App.tsx`: tab bar (Beranda / Harian / Bulanan) dan tombol tambah.
-- `src/store.tsx`: state transaksi, disimpan di AsyncStorage (offline, di HP).
+Keuangan Adhika: aplikasi pencatat keuangan pribadi (Expo + React Native + TypeScript), offline tanpa akun.
+- `App.tsx`: header, 5 tab (Ringkasan, Transaksi, Statistik, Kalender, Pengaturan), tombol Catat Baru, dan semua form modal.
+- `src/store.tsx`: semua data (transaksi, pengaturan, anggaran, kategori buatan sendiri, tagihan, target), disimpan di AsyncStorage per kunci `@keuangan/<nama>/v1`.
 - `src/format.ts`: format Rupiah dan tanggal. Tanggal disimpan sebagai string lokal `YYYY-MM-DD`.
-- `src/categories.ts`: daftar kategori pemasukan/pengeluaran.
-- `src/screens/*`: layar. `src/components/*`: komponen bersama.
+- `src/periods.ts`: periode minggu, bulan (mengikuti tanggal mulai siklus), dan tahun.
+- `src/bills.ts`: status tagihan rutin. `src/categories.ts`: kategori bawaan dan ikon.
+- `src/screens/*`: layar tab; `src/screens/settings/*`: form anggaran, kategori, target, tagihan. `src/components/*`: komponen bersama dan grafik.
 - `.github/workflows/build-apk.yml`: membangun APK otomatis setiap push.
+
+Fitur yang butuh bank atau server (transfer, QRIS, sinkronisasi cloud, akun) sengaja tidak ada; jangan ditambahkan tanpa diminta.
 
 Bahasa antarmuka: **Bahasa Indonesia**. Mata uang: **Rupiah** tanpa desimal (`Rp 1.500.000`).
 
