@@ -1,38 +1,73 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { formatCompact } from '../format';
 import { amountText, Colors, F, useColors, useStyles } from '../theme';
+import { useReduceMotion } from './ui';
 
 export interface Slice { key: string; value: number; color: string }
 
-/** Donat dengan celah antar potongan, supaya batas potongan tetap terlihat walau warnanya mirip. */
-export function Donut({ slices, size = 192, stroke = 22, selected, onSelect, centerTop, centerBottom, label }: {
+/** Nilai 0 ke 1 (ease-out) yang diputar ulang setiap `trigger` berubah; langsung 1 bila pengguna mengurangi gerakan. */
+function useTween(trigger: string, duration: number): number {
+  const reduce = useReduceMotion();
+  const [t, setT] = useState(reduce ? 1 : 0);
+  useEffect(() => {
+    if (reduce) {
+      setT(1);
+      return;
+    }
+    setT(0);
+    const start = Date.now();
+    let frame = 0;
+    const step = () => {
+      const p = Math.min(1, (Date.now() - start) / duration);
+      setT(1 - Math.pow(1 - p, 3));
+      if (p < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [trigger, duration, reduce]);
+  return t;
+}
+
+const SELECTED_EXTRA = 6;
+
+/**
+ * Donat dengan celah antar potongan, supaya batas potongan tetap terlihat walau warnanya mirip.
+ * Saat tampil, lingkaran tergambar dari kosong dan angka di tengah naik dari 0.
+ */
+export function Donut({ slices, size = 192, stroke = 22, selected, onSelect, centerPercent, centerBottom, label }: {
   slices: Slice[]; size?: number; stroke?: number; selected?: string; onSelect?: (key: string) => void;
-  centerTop: string; centerBottom: string; label: string;
+  centerPercent: number | null; centerBottom: string; label: string;
 }) {
   const c = useColors();
   const s = useStyles(styles);
-  const r = (size - stroke) / 2;
+  // Jari-jari menyisakan ruang untuk potongan terpilih yang lebih tebal, supaya tidak terpotong tepi gambar.
+  const r = (size - stroke - SELECTED_EXTRA) / 2 - 1;
   const circ = 2 * Math.PI * r;
   const total = slices.reduce((a, x) => a + x.value, 0);
   const gap = slices.length > 1 ? 3 : 0;
+  const ringKey = slices.map((x) => `${x.key}:${x.value}`).join('|');
+  const ring = useTween(ringKey, 900);
+  const center = useTween(`${ringKey}#${selected}`, 700);
+  const drawn = ring * circ;
   let offset = 0;
   return (
     <View style={{ width: size, height: size, alignSelf: 'center' }} accessible accessibilityLabel={label}>
-      <Svg width={size} height={size} style={{ transform: [{ rotate: '-90deg' }] }}>
+      <Svg width={size} height={size}>
         <Circle cx={size / 2} cy={size / 2} r={r} stroke={c.container} strokeWidth={stroke} fill="none" />
         {slices.map((x) => {
           const len = total ? (x.value / total) * circ : 0;
-          const dash = Math.max(0, len - gap);
+          const visible = Math.max(0, Math.min(len - gap, drawn - offset));
+          // Offset seperempat lingkaran membuat potongan pertama mulai dari arah jam 12.
           const el = (
             <Circle
               key={x.key}
               cx={size / 2} cy={size / 2} r={r}
               stroke={x.color}
-              strokeWidth={selected === x.key ? stroke + 6 : stroke}
-              strokeDasharray={`${dash} ${circ - dash}`}
-              strokeDashoffset={-offset}
+              strokeWidth={selected === x.key ? stroke + SELECTED_EXTRA : stroke}
+              strokeDasharray={`${visible} ${circ - visible}`}
+              strokeDashoffset={circ / 4 - offset}
               fill="none"
               onPress={onSelect ? () => onSelect(x.key) : undefined}
             />
@@ -42,7 +77,7 @@ export function Donut({ slices, size = 192, stroke = 22, selected, onSelect, cen
         })}
       </Svg>
       <View style={s.center} pointerEvents="none">
-        <Text style={s.centerTop}>{centerTop}</Text>
+        <Text style={s.centerTop}>{centerPercent === null ? '' : `${Math.round(centerPercent * center)}%`}</Text>
         <Text style={s.centerBottom} numberOfLines={2}>{centerBottom}</Text>
       </View>
     </View>

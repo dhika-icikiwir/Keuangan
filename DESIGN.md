@@ -1,6 +1,6 @@
 # DESIGN.md: Keuangan Adhika
 
-Reading this as: aplikasi pencatat keuangan pribadi untuk pemakaian sehari-hari di HP, mengikuti desain "Artha" yang diberikan pemilik (hijau zamrud, Plus Jakarta Sans, kartu putih membulat, 5 tab), dalam versi jujur tanpa hiasan palsu. Dial ENERGY 2 / RHYTHM 2 / MOTION 1.
+Reading this as: aplikasi pencatat keuangan pribadi untuk pemakaian sehari-hari di HP, mengikuti desain "Artha" yang diberikan pemilik (hijau zamrud, Plus Jakarta Sans, kartu putih membulat, 5 tab), dalam versi jujur tanpa hiasan palsu. Dial ENERGY 2 / RHYTHM 2 / MOTION 2.
 
 ## Asal arah desain
 Pemilik memberikan lima mockup HTML (Ringkasan, Transaksi, Statistik, Kalender, Pengaturan). Keputusan pemilik pada 2026-11-06:
@@ -40,7 +40,9 @@ MaterialIcons (keluarga yang sama dengan Material Symbols di mockup). Setiap iko
 Tidak ada angka contoh. Persentase pembanding dihitung dari periode sebelumnya dan disembunyikan bila periode sebelumnya kosong. Catatan di Ringkasan dan Statistik hanya muncul bila datanya ada.
 
 ## Gerak
-Hanya umpan balik saat ditekan dan form yang muncul dari bawah. Animasi form dimatikan bila pengguna menyalakan "kurangi gerakan".
+- Umpan balik saat ditekan dan form yang muncul dari bawah.
+- Donat di Statistik tergambar dari kosong dan angka persen di tengah naik dari 0 setiap kali layar dibuka atau datanya berganti (permintaan pemilik, 2026-11-06). Tujuannya menuntun mata ke pembagian kategori. Saat kategori lain dipilih, hanya angka di tengah yang dihitung ulang.
+- Semua animasi dimatikan bila pengguna menyalakan "kurangi gerakan".
 
 ## Tema
 Mengikuti tema sistem HP (terang/gelap).

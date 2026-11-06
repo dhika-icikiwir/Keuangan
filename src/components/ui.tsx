@@ -269,7 +269,7 @@ export function TextField({ value, onChange, label, placeholder, maxLength }: {
   );
 }
 
-function useReduceMotion() {
+export function useReduceMotion() {
   const [reduce, setReduce] = useState(false);
   useEffect(() => {
     AccessibilityInfo.isReduceMotionEnabled().then(setReduce).catch(() => {});

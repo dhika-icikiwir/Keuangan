@@ -130,7 +130,7 @@ export default function StatsScreen({ onManageBudgets }: { onManageBudgets: () =
               slices={slices}
               selected={selectedKey}
               onSelect={setPicked}
-              centerTop={selectedRow ? `${pctOf(selectedRow[1])}%` : ''}
+              centerPercent={selectedRow ? pctOf(selectedRow[1]) : null}
               centerBottom={selectedRow ? labelOf(selectedRow[0]) : ''}
               label={`Grafik donat ${flowWord} per kategori. ${rows.map(([k, v]) => `${labelOf(k)} ${pctOf(v)} persen`).join(', ')}`}
             />
